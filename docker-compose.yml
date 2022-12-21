@@ -1,8 +1,11 @@
+volumes:
+    mavendata:
+    javadata:
 
 services:
     tempo:
         image: grafana/tempo
-        extra_hosts: ['host.docker.internal:host-gateway']
+        container_name: demo-obs-tempo
         command: [ "-config.file=/etc/tempo.yaml" ]
         volumes:
             - ./docker/tempo/tempo-local.yaml:/etc/tempo.yaml:ro
@@ -13,7 +16,7 @@ services:
 
     loki:
         image: grafana/loki
-        extra_hosts: ['host.docker.internal:host-gateway']
+        container_name: demo-obs-loki
         command: [ "-config.file=/etc/loki/local-config.yaml" ]
         ports:
             - "3100:3100"                                   # loki needs to be exposed so it receives logs
@@ -25,7 +28,7 @@ services:
 
     prometheus:
         image: prom/prometheus
-        extra_hosts: ['host.docker.internal:host-gateway']
+        container_name: demo-obs-prometheus
         command:
             - --enable-feature=exemplar-storage
             - --config.file=/etc/prometheus/prometheus.yml
@@ -36,7 +39,7 @@ services:
 
     grafana:
         image: grafana/grafana
-        extra_hosts: ['host.docker.internal:host-gateway']
+        container_name: demo-obs-grafana
         volumes:
             - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
             - ./docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
@@ -46,5 +49,28 @@ services:
             - GF_AUTH_DISABLE_LOGIN_FORM=true
         ports:
             - "3000:3000"
-# Prometheus: http://localhost:9090/
-# Grafana: http://localhost:3000/
+    # Prometheus: http://localhost:9090/
+    # Grafana: http://localhost:3000/
+
+    ide:
+        build: docker/ide
+        container_name: demo-obs-ide
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix
+            - ${HOME}/.ssh:/home/developer/.ssh
+            - ${HOME}/.gitconfig:/home/developer/.gitconfig
+            - mavendata:/home/developer/.m2/repository
+            - javadata:/home/developer/.java
+            - ..:/home/developer/src/
+            - /var/run/docker.sock:/var/run/docker.sock
+        environment:
+            - DISPLAY=$DISPLAY
+            - LANG
+            - LANGUAGE
+            - TERM
+            - MAVEN_REPO_USER
+            - MAVEN_REPO_TOKEN
+            - IPP_TOKEN
+            - IPP_USER
+        privileged: true
+        tty: true
