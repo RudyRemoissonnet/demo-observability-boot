@@ -13,7 +13,7 @@ The upcoming Spring Boot `3.0.0-RC1` release will contain numerous autoconfigura
 
 We have been changing the Micrometer API a lot over the course of this year. The most important change is that we have introduced a new API: the Observation API.
 
-> The idea of its founding was that we want the users to instrument their code once using a single API and have multiple benefits out of it (e.g. metrics, tracing, logging).
+> The idea of its founding was that we want the flights to instrument their code once using a single API and have multiple benefits out of it (e.g. metrics, tracing, logging).
 
 This blog post details what you need to know to about that API and how you can use it to provide more insights into your application.
 

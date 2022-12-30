@@ -12,8 +12,10 @@
 	<description>observability-blog-post-parent</description>
 
 	<modules>
-		<module>client</module>
-		<module>server</module>
+		<module>app-server</module>
+		<module>app-boot-2</module>
+		<module>app-boot-3</module>
+		<module>app-client</module>
 		<module>docs</module>
 	</modules>
 

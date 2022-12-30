@@ -16,14 +16,16 @@ $ docker compose up
 +
 [source,bash]
 ----
-$ ./mvnw spring-boot:run -pl :server
+$ mvn spring-boot:run -pl :app-server
+$ mvn spring-boot:run -pl :app-boot-3
+$ mvn spring-boot:run -pl :app-boot-2
 ----
 
 . Run the client side application (this will block your current terminal window)
 +
 [source,bash]
 ----
-$ ./mvnw spring-boot:run -pl :client
+$ mvn spring-boot:run -pl :app-client
 ----
 +
 You should see log statements similar to these:
