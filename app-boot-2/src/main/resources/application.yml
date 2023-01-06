@@ -5,23 +5,19 @@ spring:
   sleuth:
     enabled: true
     propagation.type: w3c,b3
+    # All traces should be sent to latency analysis tool
     sampler.probability: 1
   zipkin:
     enabled: true
+    # default is localhost
     baseUrl: http://tempo:9411/api/v2/spans
 
 
-  # All traces should be sent to latency analysis tool
 management:
-  #tracing.sampling.probability: 1.0
-  endpoints.web.exposure.include: "*"
-
+  endpoints.web.exposure.include: '*'
   # For Exemplars to work we need histogram buckets
   metrics.distribution.percentiles-histogram.http.server.requests: true
 
-  # default is localhost
-  #zipkin.tracing.endpoint: http://tempo:9411/api/v2/spans
 
-
-  # traceID and spanId are predefined MDC keys - we want the logs to include them
+# traceID and spanId are predefined MDC keys - we want the logs to include them
 logging.pattern.level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

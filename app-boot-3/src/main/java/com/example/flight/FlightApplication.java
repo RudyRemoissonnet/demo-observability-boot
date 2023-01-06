@@ -2,6 +2,7 @@ package com.example.flight;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.annotation.Observed;
 import io.micrometer.observation.aop.ObservedAspect;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -46,6 +47,8 @@ class FlightController {
         this.observationRegistry = observationRegistry;
     }
 
+    @Observed(name = "flight.search",
+            contextualName = "search flights annotation")
     @GetMapping("/flights")
     List<FlightResponse> flights() {
         log.info("searching flights");

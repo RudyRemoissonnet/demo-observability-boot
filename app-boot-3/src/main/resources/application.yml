@@ -9,20 +9,20 @@ spring:
     driverClassName: org.h2.Driver
   h2.console.enabled: true
   jpa:
-    spring.jpa.database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.H2Dialect
     defer-datasource-initialization: true
 
 
-  # All traces should be sent to latency analysis tool
 management:
+  # All traces should be sent to latency analysis tool
   tracing.sampling.probability: 1.0
-  endpoints.web.exposure.include: "*"
-
+  # include all to have prometheus
+  endpoints.web.exposure.include: '*'
   # For Exemplars to work we need histogram buckets
   metrics.distribution.percentiles-histogram.http.server.requests: true
-
   # default is localhost
   zipkin.tracing.endpoint: http://tempo:9411/api/v2/spans
 
-  # traceID and spanId are predefined MDC keys - we want the logs to include them
+
+# traceID and spanId are predefined MDC keys - we want the logs to include them
 logging.pattern.level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

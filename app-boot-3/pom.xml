@@ -18,6 +18,8 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- begining with v1.20.0 it is no more necessary to provide reflect-config.json for opentelemetry cf. app-client -->
+        <opentelemetry.version>1.21.0</opentelemetry.version>
     </properties>
 
     <dependencies>
