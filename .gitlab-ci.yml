@@ -38,7 +38,7 @@ build-image-native:
     - himem
   script:
     - free -m
-    - update-ca-certificates
+#    - update-ca-certificates
     - apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --fix-missing --no-install-recommends
                ca-certificates curl unzip zip build-essential zlib1g-dev
     - curl -s "https://get.sdkman.io" | bash
