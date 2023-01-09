@@ -12,7 +12,7 @@ build-image-jvm:
   stage: build
   when: manual
   variables:
-    MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -s .m2/settings.xml"
+    MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
   before_script:
     - shopt -s expand_aliases
     - alias mvn="mvn $MAVEN_CLI_OPTS"
