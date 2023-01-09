@@ -42,12 +42,12 @@ build-image-native:
     - apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --fix-missing --no-install-recommends
                ca-certificates curl unzip zip build-essential zlib1g-dev
     - curl -s "https://get.sdkman.io" | bash
-    - source $HOME/.sdkman/bin/sdkman-init.sh &&
+    - 'source $HOME/.sdkman/bin/sdkman-init.sh &&
               yes | sdk install maven $MAVEN_VERSION &&
               yes | sdk install java $GRAALVM_VERSION &&
               rm -rf $HOME/.sdkman/archives/* &&
               rm -rf $HOME/.sdkman/tmp/* &&
-              source $HOME/.sdkman/bin/sdkman-init.sh
+              source $HOME/.sdkman/bin/sdkman-init.sh'
     - mvn -Pnative -pl app-server native:compile
 #    - 'mvn -Pnative -pl app-boot-3 native:compile'
   artifacts:
@@ -77,6 +77,7 @@ app-server-push:
     - build-image-native
   needs:
     - build-image-native
+  when: manual
 
 
 app-boot-3-push:
@@ -92,6 +93,7 @@ app-boot-3-push:
     - build-image-native
   needs:
     - build-image-native
+  when: manual
 
 
 include:
