@@ -42,8 +42,9 @@ build-image-native:
     - apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --fix-missing --no-install-recommends
                ca-certificates curl unzip zip build-essential zlib1g-dev
     - curl -s "https://get.sdkman.io" | bash
+    - 'source $HOME/.sdkman/bin/sdkman-init.sh && 
+              yes | sdk install maven 3.8.7'
     - 'source $HOME/.sdkman/bin/sdkman-init.sh &&
-              yes | sdk install maven 3.8.7 &&
               yes | sdk install java 22.3.r17-nik &&
               rm -rf $HOME/.sdkman/archives/* &&
               rm -rf $HOME/.sdkman/tmp/* &&
