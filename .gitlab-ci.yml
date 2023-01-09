@@ -18,6 +18,7 @@ build-image-jvm:
     - alias mvn="mvn $MAVEN_CLI_OPTS"
   script:
     - free -m
+    - update-ca-certificates
     - 'mvn clean package install'
     - 'mvn -pl app-client clean compile jib:build 
            -Djib.to.auth.username=$ARTIFACTORY_USER
