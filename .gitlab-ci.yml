@@ -1,0 +1,117 @@
+cache:
+  key: "$CI_PROJECT_NAME-m2-repo"
+  paths:
+    - .m2/repository/
+
+stages:
+  - build
+
+
+build-image-jvm:
+  image: maven:3-openjdk-17-slim
+  stage: build
+  when: manual
+  variables:
+    MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -s .m2/settings.xml"
+  before_script:
+    - shopt -s expand_aliases
+    - alias mvn="mvn $MAVEN_CLI_OPTS"
+  script:
+    - free -m
+    - update-ca-certificates
+    - 'mvn clean package install'
+    - 'mvn -pl app-client clean compile jib:build 
+           -Djib.to.auth.username=$ARTIFACTORY_USER
+           -Djib.to.auth.password=$ARTIFACTORY_PASSWORD
+           -Djib.to.image=$ARTIFACTORY_URL/nfpatrs/observability/app-client:$DOCKER_TAG'
+    - 'mvn -pl app-boot-2 clean compile jib:build
+            -Djib.to.auth.username=$ARTIFACTORY_USER
+            -Djib.to.auth.password=$ARTIFACTORY_PASSWORD
+            -Djib.to.image=$ARTIFACTORY_URL/nfpatrs/observability/app-boot-2:$DOCKER_TAG'
+
+
+build-image-native:
+  image: ubuntu:20.04
+  stage: build
+  when: manual
+  tags:
+    - himem
+  script:
+    - free -m
+    - update-ca-certificates
+    - 'apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --fix-missing --no-install-recommends
+               ca-certificates curl unzip zip build-essential zlib1g-dev'
+    - 'curl -s "https://get.sdkman.io" | bash'
+    - 'source $HOME/.sdkman/bin/sdkman-init.sh &&
+              yes | sdk install maven $MAVEN_VERSION &&
+              yes | sdk install java $GRAALVM_VERSION &&
+              rm -rf $HOME/.sdkman/archives/* &&
+              rm -rf $HOME/.sdkman/tmp/* &&
+              source $HOME/.sdkman/bin/sdkman-init.sh'
+    - 'mvn -Pnative -pl app-server native:compile'
+#    - 'mvn -Pnative -pl app-boot-3 native:compile'
+  artifacts:
+    paths:
+      - ./app-server/target/**/*
+      - ./app-boot-3/target/**/*
+    when: always
+    expire_in: 3 days
+
+
+app-server-push:
+  stage: build
+  extends: .build_image_to_artifactory
+  variables:
+    REPO: nfpatrs/observability
+    IMAGE: app-server
+    TAG: v1
+    FOLDER: app-server
+    REGISTRY: "multirepo-oab.si.fr.intraorange:5002"
+    # ARTIFACTORY_USER: Artifactory user, must be defined as project variable, not in your .gitlab-ci.yml file
+    # ARTIFACTORY_PASS: Artifactory password, must be defined as project variable, not in your .gitlab-ci.yml file
+    # DOCKER_BUILD_OPTS: Supplementary options to pass to the "docker build" command ("--build-arg VAR=VAL ...")
+#  before_script:
+    # docker image from DT does not have certificate orange
+#    - echo "$MAVEN_REPOSITORY_TOKEN" | docker login -u "$MAVEN_REPOSITORY_USER" --password-stdin multirepo-oab.si.fr.intraorange:5002
+  dependencies:
+    - build-image-native
+  needs:
+    - build-image-native
+
+
+app-boot-3-push:
+  stage: build
+  extends: .build_image_to_artifactory
+  variables:
+    REPO: nfpatrs/observability
+    IMAGE: app-boot-3
+    TAG: v1
+    FOLDER: app-boot-3
+    REGISTRY: "multirepo-oab.si.fr.intraorange:5002"
+  dependencies:
+    - build-image-native
+  needs:
+    - build-image-native
+
+
+include:
+  - project: 'dt-git-public/gitlab-ci-templates'
+    ref: v0.4
+    file: '/docker/build_to_artifactory.yml'
+
+
+.deploy-template:
+  stage: deploy-cloud
+  image: registry.gitlab.tech.orange/diod-openshift/tools/oc:latest
+  tags:
+    - graas
+  when: manual
+  before_script:
+    - oc login https://master.admin-paas-om-qualifn.itn.intraorange --insecure-skip-tls-verify=true --token="$OMCLOUD_TOKEN"
+    - oc project $OMCLOUD_PROJECT
+    - cd env/omcloud
+  script:
+    - oc create configmap kanagawa --from-file=src/main/resources/application.yaml -o yaml --dry-run | oc apply -f -
+    - oc process -f os-templates/kanagawa.yml -p IMAGE_KANAGAWA=$ARTIFACTORY_URL/nfpatrs/quickstart/quickstart-quarkus-jib:1.0.0-SNAPSHOT -p QUARKUS_PROFILE=${QUARKUS_PROFILE} -p CONFIG_HASH=$(oc get cm kanagawa -o yaml | md5sum | awk '{ print $1 }')| oc apply -f -
+    - oc rollout status deploymentconfigs/kanagawa
+
