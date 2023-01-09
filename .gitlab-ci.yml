@@ -43,8 +43,8 @@ build-image-native:
                ca-certificates curl unzip zip build-essential zlib1g-dev
     - curl -s "https://get.sdkman.io" | bash
     - 'source $HOME/.sdkman/bin/sdkman-init.sh &&
-              yes | sdk install maven $MAVEN_VERSION &&
-              yes | sdk install java $GRAALVM_VERSION &&
+              yes | sdk install maven 3.8.7 &&
+              yes | sdk install java 22.3.r17-nik &&
               rm -rf $HOME/.sdkman/archives/* &&
               rm -rf $HOME/.sdkman/tmp/* &&
               source $HOME/.sdkman/bin/sdkman-init.sh'
