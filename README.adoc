@@ -36,3 +36,62 @@ include::RUNNING.adoc[]
 * https://reachmnadeem.wordpress.com/2021/03/04/observability-for-java-spring-based-applications-using-opentelemetry/
 * https://grafana.com/grafana/dashboards/17175-spring-boot-observability/
 * https://www.baeldung.com/spring-boot-h2-database
+* https://www.baeldung.com/spring-boot-3-observability
+* https://thecattlecrew.net/2022/11/07/preparing-for-spring-boot-3-choose-the-right-java-17-base-image/
+* https://medium.com/@salarai.de/how-to-enable-liveness-and-readiness-probes-in-a-spring-boot-application-a40cf3423db3
+
+== Building the image used in docker-compose
+
+. app-server and app-boot-3 are compiled with native profile, check docker/ci/Dockerfile-nativeBuilder
+
+.app-client build using jib
+[source,bash]
+----
+$ mvn -pl app-client clean compile jib:dockerBuild
+----
+
+.app-boot-2 build build using jib
+[source,bash]
+----
+$ mvn -pl app-boot-2 clean compile jib:dockerBuild
+----
+
+== How to run
+
+.Run the obesrvability stack : grafana, loki, tempo, prometheus
+[source,bash]
+----
+$ docker compose up
+----
+
+.Run the applications
+[source,bash]
+----
+$ docker compose --profile app up
+----
+
+. Go to http://localhost:3000/[Grafana], go to dashboards, and click on the `Logs, Traces, Metrics` dashboard. There you can pick a trace ID value (for example, `bbe3aea006077640b66d40f3e62f04b9`) to find all logs and traces from both applications that correspond to that trace ID.
+
+.Run IntelliJ IDE
+[source,bash]
+----
+$ ./runIdea.sh
+----
+
+== Notes
+
+. no span created with contextualName using annotation but span are created using code @see FlightApplication.java
+
+. this command should build image using local docker service but it fails
+[source,bash]
+----
+mvn -Pnative -pl app-server spring-boot:build-image
+----
+
+== native stats
+
+     PID %CPU  %MEM        VSZ       RSS TT          TIME   CMD
+    2982  1.2   1.2    12,76GB  393,91MB pts/5   00:00:12   .sdkman/candidates/java/22.3.r17-nik/bin/java -cp app-boot-2/target/classes:org/springframework/boot/spring-boot/2.7.7/spring-boot
+    2723  1.4   0.8    12,79GB  279,57MB pts/4   00:00:15   .sdkman/candidates/java/22.3.r17-nik/bin/java -cp app-boot-3/target/classes:org/springframework/boot/spring-boot/3.0.0/spring-boot
+    3824  0.6   0.4     1,96GB  142,65MB pts/3   00:00:05   ./app-server/target/app-server
+    4029  0.4   0.4     2,09GB  141,13MB pts/6   00:00:04   ./app-client/target/app-client

@@ -1,12 +1,15 @@
+version: '3.9'
+
 volumes:
     mavendata:
     javadata:
 
 services:
+
     tempo:
         # https://github.com/grafana/tempo/blob/main/CHANGELOG.md
         image: grafana/tempo:1.5.0
-        container_name: demo-obs-tempo
+        container_name: tempo
         command: [ "-config.file=/etc/tempo.yaml" ]
         volumes:
             - ./docker/tempo/tempo-local.yaml:/etc/tempo.yaml:ro
@@ -18,7 +21,7 @@ services:
     loki:
         # https://github.com/grafana/loki/blob/main/CHANGELOG.md
         image: grafana/loki:2.7.1
-        container_name: demo-obs-loki
+        container_name: loki
         command: [ "-config.file=/etc/loki/local-config.yaml" ]
         ports:
             - "3100:3100"  # loki needs to be exposed so it receives logs
@@ -31,7 +34,7 @@ services:
     prometheus:
         # https://github.com/prometheus/prometheus/releases
         image: prom/prometheus:v2.41.0
-        container_name: demo-obs-prometheus
+        container_name: prometheus
         command:
             - --enable-feature=exemplar-storage
             - --config.file=/etc/prometheus/prometheus.yml
@@ -44,7 +47,7 @@ services:
     grafana:
         # https://github.com/grafana/grafana/blob/main/CHANGELOG.md
         image: grafana/grafana:9.3.1
-        container_name: demo-obs-grafana
+        container_name: grafana
         volumes:
             - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
             - ./docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
@@ -56,9 +59,45 @@ services:
             - "3000:3000"
     # Grafana: http://localhost:3000/
 
+    app-boot-2:
+        image: app-boot-2:0.0.1-SNAPSHOT
+        container_name: app-boot-2
+        healthcheck:
+            test: curl --fail http://127.0.0.1:8082/actuator/health/readiness || exit 1
+            interval: 2s
+            start_period: 5s
+            timeout: 2s
+        profiles:
+            - app
+
+    app-boot-3:
+        image: app-boot-3:0.0.1-SNAPSHOT
+        container_name: app-boot-3
+        profiles:
+            - app
+
+    app-server:
+        image: app-server:0.0.1-SNAPSHOT
+        container_name: app-server
+        profiles:
+            - app
+
+    app-client:
+        image: app-client:0.0.1-SNAPSHOT
+        container_name: app-client
+        environment:
+            - APP_BOOT3_HOST=app-boot-3:8081
+            - APP_BOOT2_HOST=app-boot-2:8082
+            - APP_SERVER_HOST=app-server:7654
+        depends_on:
+            app-boot-2:
+                condition: service_healthy
+        profiles:
+            - app
+
     ide:
         build: docker/ide
-        container_name: demo-obs-ide
+        container_name: ide
         volumes:
             - /tmp/.X11-unix:/tmp/.X11-unix
             - ${HOME}/.ssh:/home/developer/.ssh
@@ -78,3 +117,5 @@ services:
             - IPP_USER
         privileged: true
         tty: true
+        profiles:
+            - ide

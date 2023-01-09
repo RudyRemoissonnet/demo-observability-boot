@@ -9,6 +9,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,6 +21,12 @@ import org.springframework.web.client.RestTemplate;
 public class ClientApplication {
 
 	private static final Logger log = LoggerFactory.getLogger(ClientApplication.class);
+	@Value("${app.boot3.host:localhost:8081}")
+	private String appBoot3Host;
+	@Value("${app.boot2.host:localhost:8082}")
+	private String appBoot2Host;
+	@Value("${app.server.host:localhost:7654}")
+	private String appServerHost;
 
 	public static void main(String[] args) {
 		SpringApplication.run(ClientApplication.class, args);
@@ -52,26 +59,40 @@ public class ClientApplication {
 					 // The following lambda will be executed with an observation scope (e.g. all the MDC entries will be populated with tracing information). Also the observation will be started, stopped and if an error occurred it will be recorded on the observation
 					.observe(() -> {
 
-						log.info("Will send a request to the server"); // Since we're in an observation scope - this log line will contain tracing MDC entries ...
-						String response = restTemplate.getForObject("http://localhost:7654/user/{userId}", String.class, highCardinalityUserId); // Boot's RestTemplate instrumentation creates a child span here
-						log.info("Got response [{}]", response); // ... so will this line
+						try {
+							log.info("Will send a request to the server"); // Since we're in an observation scope - this log line will contain tracing MDC entries ...
+							String response = restTemplate.getForObject("http://" + appServerHost + "/user/{userId}", String.class, highCardinalityUserId); // Boot's RestTemplate instrumentation creates a child span here
+							log.info("Got response [{}]", response); // ... so will this line
+						} catch (Exception e) {
+							log.error("app-server error", e);
+						}
 
-						callOtherApplications(restTemplate);
+						callAppBoot3(restTemplate);
+						callAppBoot2(restTemplate);
 					});
 
 		};
 	}
 	// end::runner[]
 
-	private static void callOtherApplications(RestTemplate restTemplate) {
+	private void callAppBoot3(RestTemplate restTemplate) {
+		try {
+			log.info("call boot-3 flight service");
+			String flights = restTemplate.getForObject("http://" + appBoot3Host + "/flights", String.class);
+			log.info("boot-3 flight service response: {}", flights);
+		} catch (Exception e) {
+			log.error("boot-3 service error", e);
+		}
+	}
 
-		log.info("call flight service");
-		String flights = restTemplate.getForObject("http://localhost:8081/flights", String.class);
-		log.info("flight service response: {}", flights);
-
-		log.info("call spring boot 2 application");
-		String sb2response = restTemplate.getForObject("http://localhost:8082/sb2", String.class);
-		log.info("sb2 response: {}", sb2response);
+	private void callAppBoot2(RestTemplate restTemplate) {
+		try {
+			log.info("call boot-2 application");
+			String sb2response = restTemplate.getForObject("http://" + appBoot2Host + "/sb2", String.class);
+			log.info("boot-2 response: {}", sb2response);
+		} catch (Exception e) {
+			log.error("boot-2 service error", e);
+		}
 	}
 
 	Random randomUserTypePicker = new Random();

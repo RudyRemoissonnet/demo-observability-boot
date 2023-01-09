@@ -9,4 +9,4 @@ scrape_configs:
     - job_name: 'apps'
       metrics_path: '/actuator/prometheus'
       static_configs:
-        - targets: ['ide:7654','ide:6543','ide:8081', 'ide:8082']
+        - targets: ['ide:7654','ide:6543','ide:8081', 'ide:8082', 'app-client:6543', 'app-server:7654', 'app-boot-3:8081', 'app-boot-2:8082']
