@@ -21,11 +21,11 @@ build-image-jvm:
     - 'mvn clean package install'
     - 'mvn -pl app-client clean compile jib:build 
            -Djib.to.auth.username=$ARTIFACTORY_USER
-           -Djib.to.auth.password=$ARTIFACTORY_PASSWORD
+           -Djib.to.auth.password=$ARTIFACTORY_PASS
            -Djib.to.image=$ARTIFACTORY_URL/nfpatrs/observability/app-client:$DOCKER_TAG'
     - 'mvn -pl app-boot-2 clean compile jib:build
             -Djib.to.auth.username=$ARTIFACTORY_USER
-            -Djib.to.auth.password=$ARTIFACTORY_PASSWORD
+            -Djib.to.auth.password=$ARTIFACTORY_PASS
             -Djib.to.image=$ARTIFACTORY_URL/nfpatrs/observability/app-boot-2:$DOCKER_TAG'
 
 
