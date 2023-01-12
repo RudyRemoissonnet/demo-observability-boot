@@ -1,7 +1,9 @@
 server.port: 8081
 
 spring:
-  application.name: app-boot-3
+  application:
+    name: app-boot-3
+    loki.endpoint: http://loki:3100/loki/api/v1/push
   datasource:
     url: jdbc:h2:mem:mydb
     username: sa
