@@ -9,6 +9,8 @@ spring:
     username: sa
     password: password
     driverClassName: org.h2.Driver
+  # for native compilation to handle openshift profile's specific bean
+  profiles.active: openshift
   h2.console.enabled: true
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect

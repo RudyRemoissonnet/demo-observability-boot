@@ -42,18 +42,32 @@ include::RUNNING.adoc[]
 
 == Building the image used in docker-compose
 
-. app-server and app-boot-3 are compiled with native profile, check docker/ci/Dockerfile-nativeBuilder
+. app-server and app-boot-3 are compiled with native profile, installation of the necessary tools can be found in the file docker/ci/Dockerfile-nativeBuilder
 
 .app-client build using jib
 [source,bash]
 ----
-$ mvn -pl app-client clean compile jib:dockerBuild
+$ mvn -pl app-client clean compile jib:dockerBuild -Djib.to.image=app-client:v1
 ----
 
 .app-boot-2 build build using jib
 [source,bash]
 ----
-$ mvn -pl app-boot-2 clean compile jib:dockerBuild
+$ mvn -pl app-boot-2 clean compile jib:dockerBuild -Djib.to.image=app-boot-2:v1
+----
+
+.app-boot-3 build native
+[source,bash]
+----
+$ mvn -Pnative -pl app-boot-3 native:compile
+$ bash -c "cd app-boot-3 && docker build -t app-boot-3:v1 . "
+----
+
+.app-server build native
+[source,bash]
+----
+$ mvn -Pnative -pl app-server native:compile
+$ bash -c "cd app-server && docker build -t app-server:v1 . "
 ----
 
 == How to run
@@ -72,7 +86,7 @@ $ docker compose --profile app up
 
 . Go to http://localhost:3000/[Grafana], go to dashboards, and click on the `Logs, Traces, Metrics` dashboard. There you can pick a trace ID value (for example, `bbe3aea006077640b66d40f3e62f04b9`) to find all logs and traces from both applications that correspond to that trace ID.
 
-.Run IntelliJ IDE
+.Run IntelliJ IDE for developments
 [source,bash]
 ----
 $ ./runIdea.sh
@@ -95,3 +109,123 @@ mvn -Pnative -pl app-server spring-boot:build-image
     2723  1.4   0.8    12,79GB  279,57MB pts/4   00:00:15   .sdkman/candidates/java/22.3.r17-nik/bin/java -cp app-boot-3/target/classes:org/springframework/boot/spring-boot/3.0.0/spring-boot
     3824  0.6   0.4     1,96GB  142,65MB pts/3   00:00:05   ./app-server/target/app-server
     4029  0.4   0.4     2,09GB  141,13MB pts/6   00:00:04   ./app-client/target/app-client
+
+== redhat openshift local
+
+.openshift local installation, from: https://access.redhat.com/documentation/en-us/red_hat_openshift_local/2.12/html/getting_started_guide/installation_gsg
+[source,bash]
+----
+# download crc executable and put in /usr/local/bin
+crc setup
+crc start
+# open web console, should be https://console-openshift-console.apps-crc.testing/
+crc console
+# show credential to login
+crc console --credentials
+#oc login -u developer https://api.crc.testing:6443
+oc config use-context crc-admin
+oc whoami
+
+crc stop
+crc delete # warning, this will delete all !
+----
+
+.setup local image registry, from https://hosting.analythium.io/we-need-to-talk-about-docker-registries/
+[source,bash]
+----
+docker pull registry
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
+----
+
+.push image to openshift registry
+[source,bash]
+----
+oc config use-context crc-admin
+oc registry login --insecure=true
+
+export OC_PROJECT=demo-obs
+oc delete project $OC_PROJECT
+oc new-project $OC_PROJECT
+
+export APP=app-client VERSION=v1 OC_PROJECT=demo-obs \
+&& docker tag $APP:$VERSION localhost:5000/$APP:$VERSION \
+&& docker push localhost:5000/$APP:$VERSION \
+&& oc image mirror localhost:5000/$APP:$VERSION=default-route-openshift-image-registry.apps-crc.testing/$OC_PROJECT/$APP:$VERSION --insecure=true --filter-by-os=linux/amd64
+
+export APP=app-server VERSION=v1 OC_PROJECT=demo-obs \
+&& docker tag $APP:$VERSION localhost:5000/$APP:$VERSION \
+&& docker push localhost:5000/$APP:$VERSION \
+&& oc image mirror localhost:5000/$APP:$VERSION=default-route-openshift-image-registry.apps-crc.testing/$OC_PROJECT/$APP:$VERSION --insecure=true --filter-by-os=linux/amd64
+
+export APP=app-boot-2 VERSION=v1 OC_PROJECT=demo-obs \
+&& docker tag $APP:$VERSION localhost:5000/$APP:$VERSION \
+&& docker push localhost:5000/$APP:$VERSION \
+&& oc image mirror localhost:5000/$APP:$VERSION=default-route-openshift-image-registry.apps-crc.testing/$OC_PROJECT/$APP:$VERSION --insecure=true --filter-by-os=linux/amd64
+
+export APP=app-boot-3 VERSION=v1 OC_PROJECT=demo-obs \
+&& docker tag $APP:$VERSION localhost:5000/$APP:$VERSION \
+&& docker push localhost:5000/$APP:$VERSION \
+&& oc image mirror localhost:5000/$APP:$VERSION=default-route-openshift-image-registry.apps-crc.testing/$OC_PROJECT/$APP:$VERSION --insecure=true --filter-by-os=linux/amd64
+
+oc get is
+----
+
+.process template, from: https://docs.openshift.com/container-platform/4.9/openshift_images/using-templates.html
+[source,bash]
+----
+# with all parameters :
+# oc process -f openshift/sb-template.yml -p APP=app-boot-2 -p VERSION=v1 -p NAMESPACE=demo-obs -p GROUP=my-group | oc create -f -
+oc process -f openshift/sb-template.yml -p APP=app-boot-2 | oc create -f -
+oc process -f openshift/sb-template.yml -p APP=app-boot-3 | oc create -f -
+oc process -f openshift/sb-template.yml -p APP=app-server | oc create -f -
+oc process -f openshift/sb-template.yml -p APP=app-client | oc create -f -
+----
+
+. Go to web console, login as admin kubeadmin, select project demo-obs, go to Topology view, client on app-client deployment then show logs
+You should get output similar to this:
+
+.Client side logs
+[indent=0]
+----
+2023-01-16T08:50:01.786Z INFO [app-client,,] 1 --- [ main] com.example.client.ClientApplication : Started ClientApplication in 6.408 seconds (process running for 7.043)
+2023-01-16T08:50:01.921Z INFO [app-client,377c7685b7ad7ab63b7ba9d5d823d82c,f0835ee782e5228f] 1 --- [ main] com.example.client.ClientApplication : Will send a request to the server
+2023-01-16T08:50:02.120Z INFO [app-client,377c7685b7ad7ab63b7ba9d5d823d82c,f0835ee782e5228f] 1 --- [ main] com.example.client.ClientApplication : Got response [foo]
+2023-01-16T08:50:02.122Z INFO [app-client,377c7685b7ad7ab63b7ba9d5d823d82c,f0835ee782e5228f] 1 --- [ main] com.example.client.ClientApplication : call boot-3 flight service
+2023-01-16T08:50:02.204Z INFO [app-client,377c7685b7ad7ab63b7ba9d5d823d82c,f0835ee782e5228f] 1 --- [ main] com.example.client.ClientApplication : boot-3 flight service response: [{"id":1,"origin":"Paris","destination":"New-York"},{"id":2,"origin":"New-York","destination":"Paris"},{"id":3,"origin":"Londre","destination":"Bruxelles"},{"id":4,"origin":"Rome","destination":"Madrid"},{"id":5,"origin":"Porto","destination":"Seoul"}]
+2023-01-16T08:50:02.205Z INFO [app-client,377c7685b7ad7ab63b7ba9d5d823d82c,f0835ee782e5228f] 1 --- [ main] com.example.client.ClientApplication : call boot-2 application
+2023-01-16T08:50:02.530Z INFO [app-client,377c7685b7ad7ab63b7ba9d5d823d82c,f0835ee782e5228f] 1 --- [ main] com.example.client.ClientApplication : boot-2 response: ok !
+----
+
+.cleanup, from: https://cookbook.openshift.org/working-with-resource-objects/how-do-i-delete-all-resource-objects-for-an-application.html
+[source,bash]
+----
+oc get all --selector app=$APP -o name
+oc delete all --selector app=$APP
+oc delete project $OC_PROJECT
+----
+
+== Openshift local divers
+
+.openshift registry how to
+[source,bash]
+----
+oc registry login --insecure=true
+oc image mirror registry.access.redhat.com/ubi8/ubi:latest=default-route-openshift-image-registry.apps-crc.testing/demo/ubi8:latest --insecure=true --filter-by-os=linux/amd64
+oc get is
+oc set image-lookup ubi8
+oc run demo --image=ubi8 --command -- sleep 600s
+# after this an app can be added using
+# image-registry.openshift-image-registry.svc:5000/demo/ubi8
+# or
+# default-route-openshift-image-registry.apps-crc.testing/demo/ubi8:latest
+----
+
+.add container image using console
+[source,bash]
+----
+in web console add > container images
+multirepo-oab.si.fr.intraorange:5002/nfpatrs/observability/app-server:v1
+check Allow Images from insecure registries
+create secret with <bvgg0760>:<secret> found in: cat /home/bvgg0760/.docker/config.json
+----
+

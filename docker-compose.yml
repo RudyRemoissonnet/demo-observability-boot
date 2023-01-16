@@ -60,7 +60,7 @@ services:
     # Grafana: http://localhost:3000/
 
     app-boot-2:
-        image: app-boot-2:0.0.1-SNAPSHOT
+        image: app-boot-2:v1
         container_name: app-boot-2
         healthcheck:
             test: curl --fail http://127.0.0.1:8082/actuator/health/readiness || exit 1
@@ -71,19 +71,19 @@ services:
             - app
 
     app-boot-3:
-        image: app-boot-3:0.0.1-SNAPSHOT
+        image: app-boot-3:v1
         container_name: app-boot-3
         profiles:
             - app
 
     app-server:
-        image: app-server:0.0.1-SNAPSHOT
+        image: app-server:v1
         container_name: app-server
         profiles:
             - app
 
     app-client:
-        image: app-client:0.0.1-SNAPSHOT
+        image: app-client:v1
         container_name: app-client
         environment:
             - APP_BOOT3_HOST=app-boot-3:8081

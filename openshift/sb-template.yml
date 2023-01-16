@@ -1,0 +1,125 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: sb-template
+  annotations:
+    description: "A template to deploy a spring-boot application"
+    tags: "spring-boot,service"
+labels:
+  template: sb-template
+  app: ${APP}
+objects:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${APP}
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APP}
+        app.kubernetes.io/name: ${APP}
+        app.kubernetes.io/version: ${VERSION}
+        app.kubernetes.io/part-of: ${GROUP}
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: ${APP}
+      template:
+        metadata:
+          labels:
+            app: ${APP}
+            deployment: ${APP}
+        spec:
+          containers:
+            - name: ${APP}
+              image: default-route-openshift-image-registry.apps-crc.testing/${NAMESPACE}/${APP}:${VERSION}
+              imagePullPolicy: Always
+              env:
+                - name: SERVER_PORT
+                  value: "8080"
+                - name: SPRING_PROFILES_ACTIVE
+                  value: openshift
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+#              resources:
+#                requests:
+#                  cpu: 50m
+#                  memory: 64mi
+#                limits:
+#                  cpu: 200
+#                  memory: 256mi
+#              readinessProbe:
+#                httpGet:
+#                  path: /actuator/health/readiness
+#                  port: ${CONTAINER_PORT}
+#                  scheme: HTTP
+#                initialDelaySeconds: 5
+#                timeoutSeconds: 1
+#                periodSeconds: 10
+#                successThreshold: 1
+#                failureThreshold: 3
+#              livenessProbe:
+#                httpGet:
+#                  path: /actuator/health/liveness
+#                  port: ${CONTAINER_PORT}
+#                  scheme: HTTP
+#                initialDelaySeconds: 5
+#                timeoutSeconds: 1
+#                periodSeconds: 10
+#                successThreshold: 1
+#                failureThreshold: 3
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ${APP}
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APP}
+        app.kubernetes.io/name: ${APP}
+        app.kubernetes.io/version: ${VERSION}
+        app.kubernetes.io/part-of: ${GROUP}
+    spec:
+      ports:
+        - name: 8080-tcp
+          port: 80
+          targetPort: 8080
+      selector:
+        app: ${APP}
+        deployment: ${APP}
+      type: ClusterIP
+  - kind: Route
+    apiVersion: route.openshift.io/v1
+    metadata:
+      name: ${APP}
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APP}
+        app.kubernetes.io/name: ${APP}
+        app.kubernetes.io/version: ${VERSION}
+        app.kubernetes.io/part-of: ${GROUP}
+    spec:
+      to:
+        kind: Service
+        name: ${APP}
+        weight: 100
+      port:
+        targetPort: 8080-tcp
+      tls:
+        insecureEdgeTerminationPolicy: Redirect
+        termination: edge
+      wildcardPolicy: None
+parameters:
+  - description: Namespace name
+    name: NAMESPACE
+    value: demo-obs
+  - description: Application name
+    name: APP
+    value: app-boot-2
+  - description: Application version
+    name: VERSION
+    value: v1
+  - description: Application group
+    name: GROUP
+    value: my-group
+

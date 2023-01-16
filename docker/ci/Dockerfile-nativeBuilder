@@ -1,6 +1,8 @@
 #
 # for local build, run a container based on ubuntu:20.04
-# docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ~/src:/src -it ubuntu:20.04
+#     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ~/src:/src -it ubuntu:20.04
+# then install docker binary in container
+#     curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh
 #
 FROM ubuntu:20.04
 
@@ -24,14 +26,3 @@ RUN source $HOME/.sdkman/bin/sdkman-init.sh && \
     rm -rf $HOME/.sdkman/archives/* && \
     rm -rf $HOME/.sdkman/tmp/* && \
     source $HOME/.sdkman/bin/sdkman-init.sh
-
-# to use host's docker
-#RUN curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh
-
-# app-server build
-#RUN mvn -Pnative -pl app-server native:compile
-#RUN bash -c "cd app-server && docker build -t app-server:0.0.1-SNAPSHOT . "
-
-# app-boot-3 build
-#RUN mvn -Pnative -pl app-boot-3 native:compile
-#RUN bash -c "cd app-boot-3 && docker build -t app-boot-3:0.0.1-SNAPSHOT . "

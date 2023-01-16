@@ -1,0 +1,9 @@
+management:
+  endpoint.health.probes.enabled: true
+
+# for application communication within the cluster url have the format:
+# <service-name>.<service-namespace>.svc.cluster.local:<port_if_not_80>
+app:
+  boot3.host: app-boot-3.demo-obs.svc.cluster.local
+  boot2.host: app-boot-2.demo-obs.svc.cluster.local
+  server.host: app-server.demo-obs.svc.cluster.local
