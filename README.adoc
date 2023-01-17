@@ -232,14 +232,14 @@ create secret with <bvgg0760>:<secret> found in: cat /home/bvgg0760/.docker/conf
 
 == helm
 
-.crete new namespace for helm
+.create new namespace for helm
 [source,bash]
 ----
 export OC_PROJECT=demo-helm
 oc new-project $OC_PROJECT
 ----
 
-.upload images to new namespace registry
+. upload images to new namespace registry
 
 .convert template to helm charts
 [source,bash]
