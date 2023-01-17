@@ -128,6 +128,7 @@ oc whoami
 
 crc stop
 crc delete # warning, this will delete all !
+crc cleanup # The crc cleanup command removes an existing Red Hat OpenShift Local instance and reverts changes to DNS entries created by the crc setup command
 ----
 
 .setup local image registry, from https://hosting.analythium.io/we-need-to-talk-about-docker-registries/
@@ -175,10 +176,10 @@ oc get is
 ----
 # with all parameters :
 # oc process -f openshift/sb-template.yml -p APP=app-boot-2 -p VERSION=v1 -p NAMESPACE=demo-obs -p GROUP=my-group | oc create -f -
-oc process -f openshift/sb-template.yml -p APP=app-boot-2 | oc create -f -
-oc process -f openshift/sb-template.yml -p APP=app-boot-3 | oc create -f -
-oc process -f openshift/sb-template.yml -p APP=app-server | oc create -f -
-oc process -f openshift/sb-template.yml -p APP=app-client | oc create -f -
+oc process -f openshift/sb-template.yml -p APP=app-boot-2 | oc apply -f -
+oc process -f openshift/sb-template.yml -p APP=app-boot-3 | oc apply -f -
+oc process -f openshift/sb-template.yml -p APP=app-server | oc apply -f -
+oc process -f openshift/sb-template.yml -p APP=app-client | oc apply -f -
 ----
 
 . Go to web console, login as admin kubeadmin, select project demo-obs, go to Topology view, client on app-client deployment then show logs
