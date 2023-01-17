@@ -1,12 +1,12 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: sb-template
+  name: app-template
   annotations:
     description: "A template to deploy a spring-boot application"
     tags: "spring-boot,service"
 labels:
-  template: sb-template
+  template: app-template
   app: ${APP}
 objects:
   - apiVersion: apps/v1
@@ -42,13 +42,13 @@ objects:
               ports:
                 - containerPort: 8080
                   protocol: TCP
-              resources:
-                requests:
-                  cpu: 50m
-                  memory: 150Mi
-                limits:
-                  cpu: 200m
-                  memory: 256Mi
+#              resources:
+#                requests:
+#                  cpu: 50m
+#                  memory: 150Mi
+#                limits:
+#                  cpu: 200m
+#                  memory: 256Mi
               readinessProbe:
                 httpGet:
                   path: /actuator/health/readiness

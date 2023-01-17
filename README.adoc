@@ -148,22 +148,22 @@ export OC_PROJECT=demo-obs
 oc delete project $OC_PROJECT
 oc new-project $OC_PROJECT
 
-export APP=app-client VERSION=v1 OC_PROJECT=demo-obs \
+export APP=app-client VERSION=v1 \
 && docker tag $APP:$VERSION localhost:5000/$APP:$VERSION \
 && docker push localhost:5000/$APP:$VERSION \
 && oc image mirror localhost:5000/$APP:$VERSION=default-route-openshift-image-registry.apps-crc.testing/$OC_PROJECT/$APP:$VERSION --insecure=true --filter-by-os=linux/amd64
 
-export APP=app-server VERSION=v1 OC_PROJECT=demo-obs \
+export APP=app-server VERSION=v1 \
 && docker tag $APP:$VERSION localhost:5000/$APP:$VERSION \
 && docker push localhost:5000/$APP:$VERSION \
 && oc image mirror localhost:5000/$APP:$VERSION=default-route-openshift-image-registry.apps-crc.testing/$OC_PROJECT/$APP:$VERSION --insecure=true --filter-by-os=linux/amd64
 
-export APP=app-boot-2 VERSION=v1 OC_PROJECT=demo-obs \
+export APP=app-boot-2 VERSION=v1 \
 && docker tag $APP:$VERSION localhost:5000/$APP:$VERSION \
 && docker push localhost:5000/$APP:$VERSION \
 && oc image mirror localhost:5000/$APP:$VERSION=default-route-openshift-image-registry.apps-crc.testing/$OC_PROJECT/$APP:$VERSION --insecure=true --filter-by-os=linux/amd64
 
-export APP=app-boot-3 VERSION=v1 OC_PROJECT=demo-obs \
+export APP=app-boot-3 VERSION=v1 \
 && docker tag $APP:$VERSION localhost:5000/$APP:$VERSION \
 && docker push localhost:5000/$APP:$VERSION \
 && oc image mirror localhost:5000/$APP:$VERSION=default-route-openshift-image-registry.apps-crc.testing/$OC_PROJECT/$APP:$VERSION --insecure=true --filter-by-os=linux/amd64
@@ -175,11 +175,11 @@ oc get is
 [source,bash]
 ----
 # with all parameters :
-# oc process -f openshift/sb-template.yml -p APP=app-boot-2 -p VERSION=v1 -p NAMESPACE=demo-obs -p GROUP=my-group | oc create -f -
-oc process -f openshift/sb-template.yml -p APP=app-boot-2 | oc apply -f -
-oc process -f openshift/sb-template.yml -p APP=app-boot-3 | oc apply -f -
-oc process -f openshift/sb-template.yml -p APP=app-server | oc apply -f -
-oc process -f openshift/sb-template.yml -p APP=app-client | oc apply -f -
+# oc process -f openshift/app-template.yml -p APP=app-boot-2 -p VERSION=v1 -p NAMESPACE=demo-obs -p GROUP=my-group | oc create -f -
+oc process -f openshift/app-template.yml -p APP=app-boot-2 | oc apply -f -
+oc process -f openshift/app-template.yml -p APP=app-boot-3 | oc apply -f -
+oc process -f openshift/app-template.yml -p APP=app-server | oc apply -f -
+oc process -f openshift/app-template.yml -p APP=app-client | oc apply -f -
 ----
 
 . Go to web console, login as admin kubeadmin, select project demo-obs, go to Topology view, client on app-client deployment then show logs
@@ -230,3 +230,40 @@ check Allow Images from insecure registries
 create secret with <bvgg0760>:<secret> found in: cat /home/bvgg0760/.docker/config.json
 ----
 
+== helm
+
+.crete new namespace for helm
+[source,bash]
+----
+export OC_PROJECT=demo-helm
+oc new-project $OC_PROJECT
+----
+
+.upload images to new namespace registry
+
+.convert template to helm charts
+[source,bash]
+----
+# from https://github.com/redhat-cop/template2helm
+template2helm convert --template ./openshift/app-template.yml --chart ./openshift/charts
+#add "apiVersion: v2" on top of Chat.yaml file so helm lint will not complains
+helm lint openshift/charts/app-template/
+----
+
+.install with helm
+[source,bash]
+----
+helm install --set app=app-boot-2 --set namespace=demo-helm app-boot-2-chart openshift/charts/app-template
+helm install --set app=app-boot-3 --set namespace=demo-helm app-boot-3-chart openshift/charts/app-template
+helm install --set app=app-server --set namespace=demo-helm app-server-chart openshift/charts/app-template
+helm install --set app=app-client --set namespace=demo-helm app-client-chart openshift/charts/app-template
+----
+
+.clean helm
+[source,bash]
+----
+helm delete app-boot-2-chart
+helm delete app-boot-3-chart
+helm delete app-server-chart
+helm delete app-client-chart
+----
